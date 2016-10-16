@@ -1,8 +1,9 @@
 import socket
 
 
-class Server:
+class SocketInterface:
     def __init__(self, bind_options=('127.0.0.1', 8888)):
+        self.ip, self.port_number = bind_options
         self.listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.listen_socket.bind(bind_options)

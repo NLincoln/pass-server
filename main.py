@@ -1,20 +1,38 @@
-from server import Server
+from server import SocketInterface, HTTPServer
+from server.UrlDispatcher import url, dispatch_url
+from server.HTTPServer import HTTPResponse
+import json
 
-server_addr = ('127.0.0.1', 8081)
-print("Starting server on {}:{}".format(*server_addr))
-
-httpd = Server(bind_options=server_addr)
-
-print('Server has started!')
+print("Starting server")
+socket_interface = SocketInterface()
+print('Server has started on {ip}:{socket}!'.format(ip=socket_interface.ip, socket=socket_interface.port_number))
 
 
-def generate_response(request):
-    print(request.decode('utf8'))
-    return '''\
-HTTP/1.1 200 OK
+def get_test(request, number):
+    return {'number': number}
 
-{}'''.format(request)
+url_list = [
+    url('GET', r'/test/([0-9]+)', get_test)
+]
+
+
+def handle_request(request):
+    decoded = request.decode('utf8')
+    request_object = HTTPServer.parse_http_request(decoded)
+
+    dispatch_result = dispatch_url(request_object, url_list)
+
+    if not dispatch_result:
+        return 'path not found'
+
+    callback, params = dispatch_result
+
+    response = HTTPResponse(
+        payload=json.dumps(callback(request_object, *params))
+    )
+
+    return response.create_response_string()
 
 
 while True:
-    httpd.handle_request(generate_response)
+    socket_interface.handle_request(handle_request)
