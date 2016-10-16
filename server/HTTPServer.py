@@ -1,3 +1,14 @@
+import json
+from server.UrlDispatcher import dispatch_url
+
+
+def HTTPRequestHandler(func):
+    def wrapper(self, request):
+        decoded = request.decode('utf8')
+        return func(self, parse_http_request(decoded))
+    return wrapper
+
+
 class HTTPResponse:
     def __init__(self, payload, headers=None, status_code=200):
         if headers is None:
@@ -39,7 +50,29 @@ class HTTPRequest:
         self.payload = payload
 
 
-def parse_first_line(line):
+class JSONRequestHandler:
+    def __init__(self, urls=None):
+        if urls is None:
+            urls = []
+        self.url_list = urls
+    url_list = []
+
+    @HTTPRequestHandler
+    def handle_request(self, request):
+        dispatch_result = dispatch_url(request, self.url_list)
+
+        if not dispatch_result:
+            return 'path not found'
+
+        callback, params = dispatch_result
+        response = HTTPResponse(
+            payload=json.dumps(callback(request, *params))
+        )
+
+        return response.create_response_string()
+
+
+def parse_start_line(line):
     return line.split(' ')
 
 
@@ -58,7 +91,7 @@ def parse_headers(header_array):
 def parse_http_request(request_string):
     head, payload = request_string.split('\r\n\r\n')
     lines = head.splitlines()
-    method, path, http_version = parse_first_line(line=lines[0])
+    method, path, http_version = parse_start_line(line=lines[0])
     headers = parse_headers(header_array=lines[1:])
     return HTTPRequest(headers=headers,
                        method=method,

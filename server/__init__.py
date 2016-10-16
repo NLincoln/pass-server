@@ -9,6 +9,10 @@ class SocketInterface:
         self.listen_socket.bind(bind_options)
         self.listen_socket.listen(1)
 
+    def server_forever(self, callback):
+        while True:
+            self.handle_request(callback)
+
     def handle_request(self, callback):
         client_connection, client_address = self.listen_socket.accept()
         request = client_connection.recv(1024)

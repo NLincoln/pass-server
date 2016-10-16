@@ -1,11 +1,6 @@
-from server import SocketInterface, HTTPServer
-from server.UrlDispatcher import url, dispatch_url
-from server.HTTPServer import HTTPResponse
-import json
-
-print("Starting server")
-socket_interface = SocketInterface()
-print('Server has started on {ip}:{socket}!'.format(ip=socket_interface.ip, socket=socket_interface.port_number))
+from server import SocketInterface
+from server.UrlDispatcher import url
+from server.HTTPServer import JSONRequestHandler
 
 
 def get_test(request, number):
@@ -15,24 +10,7 @@ url_list = [
     url('GET', r'/test/([0-9]+)', get_test)
 ]
 
-
-def handle_request(request):
-    decoded = request.decode('utf8')
-    request_object = HTTPServer.parse_http_request(decoded)
-
-    dispatch_result = dispatch_url(request_object, url_list)
-
-    if not dispatch_result:
-        return 'path not found'
-
-    callback, params = dispatch_result
-
-    response = HTTPResponse(
-        payload=json.dumps(callback(request_object, *params))
-    )
-
-    return response.create_response_string()
-
-
-while True:
-    socket_interface.handle_request(handle_request)
+print("Starting server")
+socket_interface = SocketInterface()
+print('Server has started on {ip}:{socket}!'.format(ip=socket_interface.ip, socket=socket_interface.port_number))
+socket_interface.server_forever(JSONRequestHandler(urls=url_list).handle_request)
