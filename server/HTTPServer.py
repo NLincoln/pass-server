@@ -1,5 +1,6 @@
 import json
 from server.UrlDispatcher import dispatch_url
+from server.Exception import HTTPException
 
 
 def HTTPRequestHandler(func):
@@ -57,19 +58,29 @@ class JSONRequestHandler:
         self.url_list = urls
     url_list = []
 
+    @staticmethod
+    def get_default_headers():
+        return [
+            ('server', 'pass-server')
+        ]
+
     @HTTPRequestHandler
     def handle_request(self, request):
-        dispatch_result = dispatch_url(request, self.url_list)
+        status_code = 200
+        response_payload = None
 
-        if not dispatch_result:
-            return 'path not found'
+        try:
+            dispatch_result = dispatch_url(request, self.url_list)
+            callback, params = dispatch_result
+            response_payload = callback(request, *params)
+        except HTTPException as e:
+            status_code = e.code
 
-        callback, params = dispatch_result
-        response = HTTPResponse(
-            payload=json.dumps(callback(request, *params))
-        )
-
-        return response.create_response_string()
+        return HTTPResponse(
+            payload=json.dumps(response_payload),
+            status_code=status_code,
+            headers=self.get_default_headers()
+        ).create_response_string()
 
 
 def parse_start_line(line):

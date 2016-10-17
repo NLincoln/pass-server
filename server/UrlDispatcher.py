@@ -1,4 +1,5 @@
 import re
+from server.Exception import NotFoundException
 
 
 def dispatch_url(request, url_list):
@@ -7,6 +8,7 @@ def dispatch_url(request, url_list):
         match = regex.search(request.path)
         if request.method == method and match:
             return callback, match.groups()
+    raise NotFoundException(request.path)
 
 
 def url(method, regex, callback):
